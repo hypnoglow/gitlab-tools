@@ -23,9 +23,11 @@ func main() {
 	var (
 		groupID                     string
 		maxDurationSinceLastContact time.Duration
+		dryRun                      bool
 	)
 	flagset.StringVar(&groupID, "group-id", "", "GitLab group ID (required)")
 	flagset.DurationVar(&maxDurationSinceLastContact, "max-duration-since-last-contact", defaultMaxDurationSinceLastContact, "Remove runners with last contact duration bigger than this value")
+	flagset.BoolVar(&dryRun, "dry-run", false, "Preview what will be done but do nothing")
 	_ = flagset.Parse(os.Args[1:])
 
 	if groupID == "" {
@@ -48,6 +50,7 @@ func main() {
 
 	page := 1
 	perPage := 20
+	removed := 0
 
 listing:
 	for {
@@ -80,9 +83,13 @@ listing:
 
 			if durationSinceLastContact > maxDurationSinceLastContact {
 				log.Printf("Removing runner %v", runner.ID)
-				_, err := runnerService.RemoveRunner(runner.ID)
-				if err != nil {
-					log.Fatalf("Remove runner: %v", err)
+
+				if !dryRun {
+					_, err := runnerService.RemoveRunner(runner.ID)
+					if err != nil {
+						log.Fatalf("Remove runner: %v", err)
+					}
+					removed++
 				}
 			}
 		}
@@ -93,4 +100,6 @@ listing:
 
 		page++
 	}
+
+	log.Printf("Removed total %d runners.", removed)
 }
