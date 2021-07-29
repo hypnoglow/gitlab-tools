@@ -77,6 +77,11 @@ listing:
 				log.Fatalf("Get runner details: %v", err)
 			}
 
+			if details.ContactedAt == nil {
+				log.Printf("WARNING: gitlab runner id=%v has empty 'contacted_at' field. Skipping runner.", runner.ID)
+				continue
+			}
+
 			durationSinceLastContact := time.Now().Sub(*details.ContactedAt)
 
 			log.Printf("Last contact: %v (%v)", details.ContactedAt, durationSinceLastContact)
